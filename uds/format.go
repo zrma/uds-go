@@ -6,8 +6,8 @@ import (
 )
 
 func format(numOfBytes int64) (string, error) {
-	if numOfBytes < 0 {
-		return "", errors.New("size can't be smaller than 0")
+	if numOfBytes <= 0 {
+		return "", errors.New("size should be positive")
 	}
 
 	step := 1024.
