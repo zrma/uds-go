@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 )
 
 // Retrieve a token, saves the token, then returns the generated client.
-func getClient(config *oauth2.Config) *http.Client {
+func getToken(config *oauth2.Config) *oauth2.Token {
 	// The file token.json stores the user's access and refresh tokens, and is
 	// created automatically when the authorization flow completes for the first
 	// time.
@@ -25,7 +25,7 @@ func getClient(config *oauth2.Config) *http.Client {
 		tok = getTokenFromWeb(config)
 		saveToken(tokFile, tok)
 	}
-	return config.Client(context.Background(), tok)
+	return tok
 }
 
 // Request a token from the web, then returns the retrieved token.
@@ -76,18 +76,19 @@ func main() {
 	}
 
 	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(b, drive.DriveMetadataReadonlyScope)
+	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
-	client := getClient(config)
 
-	srv, err := drive.New(client)
+	token := getToken(config)
+	ctx := context.Background()
+	driveService, err := drive.NewService(ctx, option.WithTokenSource(config.TokenSource(ctx, token)))
 	if err != nil {
-		log.Fatalf("Unable to retrieve Drive client: %v", err)
+		log.Fatalf("Unable to retrieve NewService: %v", err)
 	}
 
-	r, err := srv.Files.List().PageSize(10).
+	r, err := driveService.Files.List().PageSize(10).
 		Fields("nextPageToken, files(id, name)").Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve files: %v", err)
