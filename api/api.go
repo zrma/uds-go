@@ -14,11 +14,13 @@ import (
 	"google.golang.org/api/drive/v3"
 )
 
+// Service struct is google api service wrapper.
 type Service struct {
 	*drive.Service
 	ctx context.Context
 }
 
+// NewService function returns initialized Service object's pointer
 func NewService() (*Service, error) {
 	api := &Service{}
 	if err := api.init(); err != nil {
