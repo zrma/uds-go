@@ -11,15 +11,12 @@ import (
 var _ = Describe("파일 읽기 테스트", func() {
 	var service *api.Service
 	BeforeEach(func() {
-		reader := &mocks.Reader{}
-		reader.ReadFileReturns([]byte{}, nil)
-		reader.ConfigFromJSONReturns(&oauth2.Config{}, nil)
-
 		author := &mocks.Author{}
+		author.ReadFileReturns([]byte{}, nil)
+		author.ConfigFromJSONReturns(&oauth2.Config{}, nil)
 		author.GetTokenReturns(&oauth2.Token{})
 
 		service = &api.Service{
-			Reader: reader,
 			Author: author,
 		}
 	})

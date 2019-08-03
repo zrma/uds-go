@@ -19,25 +19,12 @@ type Service struct {
 	*drive.Service
 	ctx context.Context
 
-	Reader
 	Author
-}
-
-type ReaderWrapper struct {
-}
-
-func (r ReaderWrapper) ConfigFromJSON(jsonKey []byte, scope ...string) (*oauth2.Config, error) {
-	return google.ConfigFromJSON(jsonKey, scope...)
-}
-
-func (r ReaderWrapper) ReadFile(filename string) ([]byte, error) {
-	return ioutil.ReadFile(filename)
 }
 
 // NewService function returns initialized Service object's pointer
 func NewService() (*Service, error) {
 	api := &Service{
-		Reader: &ReaderWrapper{},
 		Author: &AuthorImpl{},
 	}
 	if err := api.Init(); err != nil {
@@ -46,6 +33,7 @@ func NewService() (*Service, error) {
 	return api, nil
 }
 
+// Init works internally but public(export) for using in apt_test package
 func (api *Service) Init() error {
 	b, err := api.ReadFile("credentials.json")
 	if err != nil {
@@ -72,9 +60,21 @@ func (api *Service) Init() error {
 	return nil
 }
 
+// AuthorImpl is impl some api for mocking test
 type AuthorImpl struct {
 }
 
+// ConfigFromJSON wrapping google.ConfigFromJSON api
+func (AuthorImpl) ConfigFromJSON(jsonKey []byte, scope ...string) (*oauth2.Config, error) {
+	return google.ConfigFromJSON(jsonKey, scope...)
+}
+
+// ReadFile wrapping ioutil.ReadFile
+func (AuthorImpl) ReadFile(filename string) ([]byte, error) {
+	return ioutil.ReadFile(filename)
+}
+
+// GetToken return oauth token
 func (a AuthorImpl) GetToken(config *oauth2.Config) *oauth2.Token {
 	// The file token.json stores the user's access and refresh tokens, and is
 	// created automatically when the authorization flow completes for the first
