@@ -3,45 +3,62 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"google.golang.org/api/option"
+	"golang.org/x/oauth2/google"
 	"io/ioutil"
 	"log"
 	"os"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 )
 
 // Service struct is google api service wrapper.
 type Service struct {
 	*drive.Service
 	ctx context.Context
+
+	Reader
+	Author
+}
+
+type ReaderWrapper struct {
+}
+
+func (r ReaderWrapper) ConfigFromJSON(jsonKey []byte, scope ...string) (*oauth2.Config, error) {
+	return google.ConfigFromJSON(jsonKey, scope...)
+}
+
+func (r ReaderWrapper) ReadFile(filename string) ([]byte, error) {
+	return ioutil.ReadFile(filename)
 }
 
 // NewService function returns initialized Service object's pointer
 func NewService() (*Service, error) {
-	api := &Service{}
-	if err := api.init(); err != nil {
+	api := &Service{
+		Reader: &ReaderWrapper{},
+		Author: &AuthorImpl{},
+	}
+	if err := api.Init(); err != nil {
 		return nil, err
 	}
 	return api, nil
 }
 
-func (api *Service) init() error {
-	b, err := ioutil.ReadFile("credentials.json")
+func (api *Service) Init() error {
+	b, err := api.ReadFile("credentials.json")
 	if err != nil {
 		return err
 	}
 
 	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(b, drive.DriveScope)
+	config, err := api.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
 
-	token := getToken(config)
+	token := api.GetToken(config)
 	api.ctx = context.Background()
 	driveService, err := drive.NewService(
 		api.ctx,
@@ -55,8 +72,10 @@ func (api *Service) init() error {
 	return nil
 }
 
-// Retrieve a token, saves the token, then returns the generated client.
-func getToken(config *oauth2.Config) *oauth2.Token {
+type AuthorImpl struct {
+}
+
+func (a AuthorImpl) GetToken(config *oauth2.Config) *oauth2.Token {
 	// The file token.json stores the user's access and refresh tokens, and is
 	// created automatically when the authorization flow completes for the first
 	// time.
@@ -73,7 +92,7 @@ func getToken(config *oauth2.Config) *oauth2.Token {
 func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	fmt.Printf("Go to the following link in your browser then type the "+
-		"authorization code: \n%v\n", authURL)
+		"authorization code: \n%v\n\n>>", authURL)
 
 	var authCode string
 	if _, err := fmt.Scan(&authCode); err != nil {
