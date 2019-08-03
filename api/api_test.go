@@ -9,7 +9,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var _ = Describe("파일 읽기 테스트", func() {
+var _ = Describe("Service", func() {
 	var service *api.Service
 	author := &mocks.Author{}
 	BeforeEach(func() {
@@ -22,12 +22,12 @@ var _ = Describe("파일 읽기 테스트", func() {
 		}
 	})
 
-	It("성공", func() {
+	It("success to initialize", func() {
 		err := service.Init()
 		Expect(err).ShouldNot(HaveOccurred())
 	})
 
-	It("파일 읽기 예외 처리 확인", func() {
+	It("handle credentials.json reading error", func() {
 		expected := errors.New("read file error")
 		author.ReadFileReturns(nil, expected)
 		err := service.Init()
@@ -35,7 +35,7 @@ var _ = Describe("파일 읽기 테스트", func() {
 		Expect(err).Should(Equal(expected))
 	})
 
-	It("JSON config 예외 처리 확인", func() {
+	It("handle json config parsing error", func() {
 		expected := errors.New("config parse from json")
 		author.ConfigFromJSONReturns(nil, expected)
 		err := service.Init()

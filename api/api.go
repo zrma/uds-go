@@ -99,11 +99,11 @@ func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 		log.Fatalf("Unable to read authorization code %v", err)
 	}
 
-	tok, err := config.Exchange(context.TODO(), authCode)
+	token, err := config.Exchange(context.TODO(), authCode)
 	if err != nil {
 		log.Fatalf("Unable to retrieve token from web %v", err)
 	}
-	return tok
+	return token
 }
 
 // Retrieves a token from a local file.
@@ -113,9 +113,9 @@ func tokenFromFile(file string) (*oauth2.Token, error) {
 		return nil, err
 	}
 	defer f.Close()
-	tok := &oauth2.Token{}
-	err = json.NewDecoder(f).Decode(tok)
-	return tok, err
+	token := &oauth2.Token{}
+	err = json.NewDecoder(f).Decode(token)
+	return token, err
 }
 
 // Saves a token to a file path.
