@@ -80,6 +80,12 @@ var _ = Describe("token file I/O", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		diff := deep.Equal(*actual, expected)
 		Expect(diff).Should(BeNil())
+
+		By("GetToken test after setting files...")
+		author := api.AuthorImpl{}
+		actual = author.GetToken(&oauth2.Config{}, tokenPath)
+		diff = deep.Equal(*actual, expected)
+		Expect(diff).Should(BeNil())
 	})
 
 	AfterEach(func() {

@@ -23,10 +23,11 @@ type Author struct {
 		result1 *oauth2.Config
 		result2 error
 	}
-	GetTokenStub        func(*oauth2.Config) *oauth2.Token
+	GetTokenStub        func(*oauth2.Config, string) *oauth2.Token
 	getTokenMutex       sync.RWMutex
 	getTokenArgsForCall []struct {
 		arg1 *oauth2.Config
+		arg2 string
 	}
 	getTokenReturns struct {
 		result1 *oauth2.Token
@@ -120,16 +121,17 @@ func (fake *Author) ConfigFromJSONReturnsOnCall(i int, result1 *oauth2.Config, r
 	}{result1, result2}
 }
 
-func (fake *Author) GetToken(arg1 *oauth2.Config) *oauth2.Token {
+func (fake *Author) GetToken(arg1 *oauth2.Config, arg2 string) *oauth2.Token {
 	fake.getTokenMutex.Lock()
 	ret, specificReturn := fake.getTokenReturnsOnCall[len(fake.getTokenArgsForCall)]
 	fake.getTokenArgsForCall = append(fake.getTokenArgsForCall, struct {
 		arg1 *oauth2.Config
-	}{arg1})
-	fake.recordInvocation("GetToken", []interface{}{arg1})
+		arg2 string
+	}{arg1, arg2})
+	fake.recordInvocation("GetToken", []interface{}{arg1, arg2})
 	fake.getTokenMutex.Unlock()
 	if fake.GetTokenStub != nil {
-		return fake.GetTokenStub(arg1)
+		return fake.GetTokenStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -144,17 +146,17 @@ func (fake *Author) GetTokenCallCount() int {
 	return len(fake.getTokenArgsForCall)
 }
 
-func (fake *Author) GetTokenCalls(stub func(*oauth2.Config) *oauth2.Token) {
+func (fake *Author) GetTokenCalls(stub func(*oauth2.Config, string) *oauth2.Token) {
 	fake.getTokenMutex.Lock()
 	defer fake.getTokenMutex.Unlock()
 	fake.GetTokenStub = stub
 }
 
-func (fake *Author) GetTokenArgsForCall(i int) *oauth2.Config {
+func (fake *Author) GetTokenArgsForCall(i int) (*oauth2.Config, string) {
 	fake.getTokenMutex.RLock()
 	defer fake.getTokenMutex.RUnlock()
 	argsForCall := fake.getTokenArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *Author) GetTokenReturns(result1 *oauth2.Token) {

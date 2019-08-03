@@ -22,6 +22,11 @@ type Service struct {
 	Author
 }
 
+const (
+	credentialFile = "credentials.json"
+	tokenFile      = "token.json"
+)
+
 // NewService function returns initialized Service object's pointer
 func NewService() (*Service, error) {
 	api := &Service{
@@ -35,7 +40,7 @@ func NewService() (*Service, error) {
 
 // Init works internally but public(export) for using in apt_test package
 func (api *Service) Init() error {
-	b, err := api.ReadFile("credentials.json")
+	b, err := api.ReadFile(credentialFile)
 	if err != nil {
 		return err
 	}
@@ -46,7 +51,7 @@ func (api *Service) Init() error {
 		return err
 	}
 
-	token := api.GetToken(config)
+	token := api.GetToken(config, tokenFile)
 	api.ctx = context.Background()
 	driveService, err := drive.NewService(
 		api.ctx,
@@ -75,17 +80,16 @@ func (AuthorImpl) ReadFile(filename string) ([]byte, error) {
 }
 
 // GetToken return oauth token
-func (a AuthorImpl) GetToken(config *oauth2.Config) *oauth2.Token {
+func (a AuthorImpl) GetToken(config *oauth2.Config, fileName string) *oauth2.Token {
 	// The file token.json stores the user's access and refresh tokens, and is
 	// created automatically when the authorization flow completes for the first
 	// time.
-	tokFile := "token.json"
-	tok, err := TokenFromFile(tokFile)
+	token, err := TokenFromFile(fileName)
 	if err != nil {
-		tok = getTokenFromWeb(config)
-		SaveToken(tokFile, tok)
+		token = getTokenFromWeb(config)
+		SaveToken(fileName, token)
 	}
-	return tok
+	return token
 }
 
 // getTokenFromWeb request a token from the web, then returns the retrieved token.
