@@ -43,7 +43,7 @@ func (api *Service) Init() error {
 	// If modifying these scopes, delete your previously saved token.json.
 	config, err := api.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
-		log.Fatalf("Unable to parse client secret file to config: %v", err)
+		return err
 	}
 
 	token := api.GetToken(config)
