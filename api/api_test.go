@@ -9,6 +9,7 @@ import (
 	"github.com/zrma/uds-go/api"
 	"github.com/zrma/uds-go/mocks"
 	"golang.org/x/oauth2"
+	"google.golang.org/api/drive/v3"
 	"os"
 	"path/filepath"
 	"time"
@@ -49,6 +50,44 @@ var _ = Describe("Service", func() {
 	})
 })
 
+var _ = Describe("GetTokenFromWeb", func() {
+	It("read string failed", func() {
+		token, err := api.GetTokenFromWeb(&oauth2.Config{
+			ClientID:     "client-1",
+			ClientSecret: "secret-2",
+			Endpoint: oauth2.Endpoint{
+				AuthURL:   "auth-url-1",
+				TokenURL:  "token-url-2",
+				AuthStyle: 0,
+			},
+			RedirectURL: "localhost-3",
+			Scopes:      []string{drive.DriveScope},
+		}, func() (s string, e error) {
+			return "", errors.New("test")
+		})
+		Expect(err).Should(HaveOccurred())
+		Expect(token).Should(BeNil())
+	})
+
+	It("exchange failed", func() {
+		token, err := api.GetTokenFromWeb(&oauth2.Config{
+			ClientID:     "client-1",
+			ClientSecret: "secret-2",
+			Endpoint: oauth2.Endpoint{
+				AuthURL:   "auth-url-1",
+				TokenURL:  "token-url-2",
+				AuthStyle: 0,
+			},
+			RedirectURL: "localhost-3",
+			Scopes:      []string{drive.DriveScope},
+		}, func() (s string, e error) {
+			return "token-1234", nil
+		})
+		Expect(err).Should(HaveOccurred())
+		Expect(token).Should(BeNil())
+	})
+})
+
 var _ = Describe("token file I/O", func() {
 	const (
 		prefix    = "tmp_"
@@ -66,7 +105,7 @@ var _ = Describe("token file I/O", func() {
 			fmt.Println("create", tmpPath)
 		}
 	})
-	
+
 	AfterEach(func() {
 		err := os.RemoveAll(tmpPath)
 		Expect(err).ShouldNot(HaveOccurred())

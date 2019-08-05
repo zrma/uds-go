@@ -3,15 +3,14 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 	"io/ioutil"
 	"log"
 	"os"
-
-	"golang.org/x/net/context"
-	"golang.org/x/oauth2"
-	"google.golang.org/api/drive/v3"
-	"google.golang.org/api/option"
 )
 
 // Service struct is google api service wrapper.
@@ -86,28 +85,34 @@ func (a AuthorImpl) GetToken(config *oauth2.Config, fileName string) *oauth2.Tok
 	// time.
 	token, err := TokenFromFile(fileName)
 	if err != nil {
-		token = getTokenFromWeb(config)
+		token, err = GetTokenFromWeb(config, func() (s string, e error) {
+			_, e = fmt.Scan(&s)
+			return
+		})
+		if err != nil {
+			log.Fatalln(err)
+		}
 		SaveToken(fileName, token)
 	}
 	return token
 }
 
-// getTokenFromWeb request a token from the web, then returns the retrieved token.
-func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
+// GetTokenFromWeb request a token from the web, then returns the retrieved token.
+func GetTokenFromWeb(config *oauth2.Config, f func() (string, error)) (*oauth2.Token, error) {
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	fmt.Printf("Go to the following link in your browser then type the "+
 		"authorization code: \n%v\n\n>>", authURL)
 
-	var authCode string
-	if _, err := fmt.Scan(&authCode); err != nil {
-		log.Fatalf("Unable to read authorization code %v", err)
+	authCode, err := f()
+	if err != nil {
+		return nil, err
 	}
 
 	token, err := config.Exchange(context.TODO(), authCode)
 	if err != nil {
-		log.Fatalf("Unable to retrieve token from web %v", err)
+		return nil, err
 	}
-	return token
+	return token, nil
 }
 
 // TokenFromFile retrieves a token from a local file.
