@@ -66,6 +66,13 @@ var _ = Describe("token file I/O", func() {
 			fmt.Println("create", tmpPath)
 		}
 	})
+	
+	AfterEach(func() {
+		err := os.RemoveAll(tmpPath)
+		Expect(err).ShouldNot(HaveOccurred())
+
+		fmt.Println("remove", tmpPath)
+	})
 
 	It("token file save/load", func() {
 		expected := oauth2.Token{
@@ -86,12 +93,5 @@ var _ = Describe("token file I/O", func() {
 		actual = author.GetToken(&oauth2.Config{}, tokenPath)
 		diff = deep.Equal(*actual, expected)
 		Expect(diff).Should(BeNil())
-	})
-
-	AfterEach(func() {
-		err := os.RemoveAll(tmpPath)
-		Expect(err).ShouldNot(HaveOccurred())
-
-		fmt.Println("remove", tmpPath)
 	})
 })
