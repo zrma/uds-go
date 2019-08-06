@@ -48,6 +48,14 @@ var _ = Describe("Service", func() {
 		Expect(err).Should(HaveOccurred())
 		Expect(err).Should(Equal(expected))
 	})
+
+	It("GetToken error", func() {
+		expected := errors.New("get token error")
+		author.GetTokenReturns(nil, expected)
+		err := service.Init()
+		Expect(err).Should(HaveOccurred())
+		Expect(err).Should(Equal(expected))
+	})
 })
 
 var _ = Describe("GetToken", func() {
@@ -137,7 +145,8 @@ var _ = Describe("token file I/O", func() {
 			Expiry:       time.Now(),
 		}
 
-		api.SaveToken(tokenPath, &expected)
+		err := api.SaveToken(tokenPath, &expected)
+		Expect(err).ShouldNot(HaveOccurred())
 		actual, err := api.TokenFromFile(tokenPath)
 		Expect(err).ShouldNot(HaveOccurred())
 		diff := deep.Equal(*actual, expected)

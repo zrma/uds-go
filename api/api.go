@@ -9,7 +9,6 @@ import (
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 	"io/ioutil"
-	"log"
 	"os"
 )
 
@@ -96,7 +95,9 @@ func (a AuthorImpl) GetToken(config *oauth2.Config, fileName string, f func() (s
 		if err != nil {
 			return nil, err
 		}
-		SaveToken(fileName, token)
+		if err := SaveToken(fileName, token); err != nil {
+			return nil, err
+		}
 	}
 	return token, nil
 }
@@ -132,12 +133,12 @@ func TokenFromFile(file string) (*oauth2.Token, error) {
 }
 
 // SaveToken saves a token to a file path.
-func SaveToken(path string, token *oauth2.Token) {
+func SaveToken(path string, token *oauth2.Token) error {
 	fmt.Printf("Saving credential file to: %s\n", path)
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		log.Fatalf("Unable to cache oauth token: %v", err)
+		return err
 	}
 	defer f.Close()
-	json.NewEncoder(f).Encode(token)
+	return json.NewEncoder(f).Encode(token)
 }
