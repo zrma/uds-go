@@ -21,7 +21,7 @@ var _ = Describe("Service", func() {
 	BeforeEach(func() {
 		author.ReadFileReturns([]byte{}, nil)
 		author.ConfigFromJSONReturns(&oauth2.Config{}, nil)
-		author.GetTokenReturns(&oauth2.Token{})
+		author.GetTokenReturns(&oauth2.Token{}, nil)
 
 		service = &api.Service{
 			Author: author,
@@ -50,41 +50,57 @@ var _ = Describe("Service", func() {
 	})
 })
 
-var _ = Describe("GetTokenFromWeb", func() {
-	It("read string failed", func() {
-		token, err := api.GetTokenFromWeb(&oauth2.Config{
-			ClientID:     "client-1",
-			ClientSecret: "secret-2",
-			Endpoint: oauth2.Endpoint{
-				AuthURL:   "auth-url-1",
-				TokenURL:  "token-url-2",
-				AuthStyle: 0,
-			},
-			RedirectURL: "localhost-3",
-			Scopes:      []string{drive.DriveScope},
-		}, func() (s string, e error) {
-			return "", errors.New("test")
+var _ = Describe("GetToken", func() {
+	config := oauth2.Config{
+		ClientID:     "client-1",
+		ClientSecret: "secret-2",
+		Endpoint: oauth2.Endpoint{
+			AuthURL:   "auth-url-1",
+			TokenURL:  "token-url-2",
+			AuthStyle: 0,
+		},
+		RedirectURL: "localhost-3",
+		Scopes:      []string{drive.DriveScope},
+	}
+
+	Context("GetToken", func() {
+		It("should fail", func() {
+			author := api.AuthorImpl{}
+			actual, err := author.GetToken(&config, "", func() (s string, e error) {
+				return "", errors.New("error-1234")
+			})
+			Expect(err).Should(HaveOccurred())
+			Expect(actual).Should(BeNil())
 		})
-		Expect(err).Should(HaveOccurred())
-		Expect(token).Should(BeNil())
+
 	})
 
-	It("exchange failed", func() {
-		token, err := api.GetTokenFromWeb(&oauth2.Config{
-			ClientID:     "client-1",
-			ClientSecret: "secret-2",
-			Endpoint: oauth2.Endpoint{
-				AuthURL:   "auth-url-1",
-				TokenURL:  "token-url-2",
-				AuthStyle: 0,
-			},
-			RedirectURL: "localhost-3",
-			Scopes:      []string{drive.DriveScope},
-		}, func() (s string, e error) {
-			return "token-1234", nil
+	Context("GetTokenFromWeb", func() {
+		It("read string failed", func() {
+			token, err := api.GetTokenFromWeb(&config, func() (s string, e error) {
+				return "", errors.New("test")
+			})
+			Expect(err).Should(HaveOccurred())
+			Expect(token).Should(BeNil())
 		})
-		Expect(err).Should(HaveOccurred())
-		Expect(token).Should(BeNil())
+
+		It("exchange failed", func() {
+			token, err := api.GetTokenFromWeb(&oauth2.Config{
+				ClientID:     "client-1",
+				ClientSecret: "secret-2",
+				Endpoint: oauth2.Endpoint{
+					AuthURL:   "auth-url-1",
+					TokenURL:  "token-url-2",
+					AuthStyle: 0,
+				},
+				RedirectURL: "localhost-3",
+				Scopes:      []string{drive.DriveScope},
+			}, func() (s string, e error) {
+				return "token-1234", nil
+			})
+			Expect(err).Should(HaveOccurred())
+			Expect(token).Should(BeNil())
+		})
 	})
 })
 
@@ -129,7 +145,11 @@ var _ = Describe("token file I/O", func() {
 
 		By("GetToken test after setting files...")
 		author := api.AuthorImpl{}
-		actual = author.GetToken(&oauth2.Config{}, tokenPath)
+		actual, err = author.GetToken(&oauth2.Config{}, tokenPath, func() (s string, e error) {
+			return
+		})
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(actual).ShouldNot(BeNil())
 		diff = deep.Equal(*actual, expected)
 		Expect(diff).Should(BeNil())
 	})

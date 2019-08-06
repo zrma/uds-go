@@ -50,7 +50,14 @@ func (api *Service) Init() error {
 		return err
 	}
 
-	token := api.GetToken(config, tokenFile)
+	token, err := api.GetToken(config, tokenFile, func() (s string, e error) {
+		_, e = fmt.Scan(&s)
+		return
+	})
+	if err != nil {
+		return err
+	}
+
 	api.ctx = context.Background()
 	driveService, err := drive.NewService(
 		api.ctx,
@@ -79,22 +86,19 @@ func (AuthorImpl) ReadFile(filename string) ([]byte, error) {
 }
 
 // GetToken return oauth token
-func (a AuthorImpl) GetToken(config *oauth2.Config, fileName string) *oauth2.Token {
+func (a AuthorImpl) GetToken(config *oauth2.Config, fileName string, f func() (string, error)) (*oauth2.Token, error) {
 	// The file token.json stores the user's access and refresh tokens, and is
 	// created automatically when the authorization flow completes for the first
 	// time.
 	token, err := TokenFromFile(fileName)
 	if err != nil {
-		token, err = GetTokenFromWeb(config, func() (s string, e error) {
-			_, e = fmt.Scan(&s)
-			return
-		})
+		token, err = GetTokenFromWeb(config, f)
 		if err != nil {
-			log.Fatalln(err)
+			return nil, err
 		}
 		SaveToken(fileName, token)
 	}
-	return token
+	return token, nil
 }
 
 // GetTokenFromWeb request a token from the web, then returns the retrieved token.
