@@ -6,6 +6,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -19,7 +22,7 @@ func getToken(config *oauth2.Config) *oauth2.Token {
 	// The file token.json stores the user's access and refresh tokens, and is
 	// created automatically when the authorization flow completes for the first
 	// time.
-	tokFile := "token.json"
+	tokFile := filepath.Join(GetCurrentDir(), "token.json")
 	tok, err := tokenFromFile(tokFile)
 	if err != nil {
 		tok = getTokenFromWeb(config)
@@ -70,7 +73,8 @@ func saveToken(path string, token *oauth2.Token) {
 }
 
 func main() {
-	b, err := ioutil.ReadFile("credentials.json")
+	credentials := filepath.Join(GetCurrentDir(), "credentials.json")
+	b, err := ioutil.ReadFile(credentials)
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)
 	}
@@ -88,17 +92,44 @@ func main() {
 		log.Fatalf("Unable to retrieve NewService: %v", err)
 	}
 
-	r, err := driveService.Files.List().PageSize(10).
-		Fields("nextPageToken, files(id, name)").Do()
+	r, err := driveService.Files.List().
+		Q("properties has {key='udsRoot' and value='true'} and trashed=false").
+		PageSize(1).
+		Fields("nextPageToken, files(id, name, properties)").Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve files: %v", err)
 	}
 	fmt.Println("Files:")
 	if len(r.Files) == 0 {
 		fmt.Println("No files found.")
+
+		file, err := driveService.Files.Create(&drive.File{
+			Name:       "UDS Root",
+			MimeType:   "application/vnd.google-apps.folder",
+			Properties: map[string]string{"udsRoot": "true"},
+			Parents:    []string{},
+		}).Fields("id").Do()
+		if err != nil {
+			log.Fatalf("Unable to create folder: %v", err)
+		}
+		fmt.Println(file)
+		fmt.Println(file.Name)
+
 	} else {
 		for _, i := range r.Files {
 			fmt.Printf("%s (%s)\n", i.Name, i.Id)
 		}
 	}
+}
+
+// __FILE__
+func GetCurrentFile() string {
+	_, filename, _, _ := runtime.Caller(1)
+	return filename
+}
+
+// __DIR__
+func GetCurrentDir() string {
+	_, filename, _, _ := runtime.Caller(1)
+	return path.Dir(filename)
 }
