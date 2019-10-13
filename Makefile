@@ -20,12 +20,12 @@ devel-deps: deps
 	$(GO) install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
 
 test: deps
-	$(GO) test -coverprofile=coverage.out -covermode=count ./...
+	./cover.sh
 
 lint: devel-deps
 	$(GO) vet ./...
-	shadow ./...
-	golint -set_exit_status ./...
+	./shadow.sh
+	golint -set_exit_status $(go list ./... | grep -v /cmd/)
 
 cover: devel-deps
 	COVERALLS_TOKEN=${COVERALLS_TOKEN} goveralls -coverprofile=coverage.out --service=travis-ci
