@@ -1,3 +1,3 @@
 package mocks
 
-//go:generate counterfeiter -o author.go --fake-name Author ../api Author
+//go:generate counterfeiter -o auth.go --fake-name Auth ../api Auth

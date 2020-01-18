@@ -3,28 +3,30 @@ package api_test
 import (
 	"errors"
 	"fmt"
-	"github.com/go-test/deep"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/zrma/uds-go/api"
-	"github.com/zrma/uds-go/mocks"
-	"golang.org/x/oauth2"
-	"google.golang.org/api/drive/v3"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/go-test/deep"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"golang.org/x/oauth2"
+	"google.golang.org/api/drive/v3"
+
+	"github.com/zrma/uds-go/api"
+	"github.com/zrma/uds-go/mocks"
 )
 
 var _ = Describe("Service", func() {
 	var service *api.Service
-	author := &mocks.Author{}
+	author := &mocks.Auth{}
 	BeforeEach(func() {
 		author.ReadFileReturns([]byte{}, nil)
 		author.ConfigFromJSONReturns(&oauth2.Config{}, nil)
 		author.GetTokenReturns(&oauth2.Token{}, nil)
 
 		service = &api.Service{
-			Author: author,
+			Auth: author,
 		}
 	})
 
@@ -73,7 +75,7 @@ var _ = Describe("GetToken", func() {
 
 	Context("GetToken", func() {
 		It("should fail", func() {
-			author := api.AuthorImpl{}
+			author := api.AuthImpl{}
 			actual, err := author.GetToken(&config, "", func() (s string, e error) {
 				return "", errors.New("error-1234")
 			})
@@ -153,7 +155,7 @@ var _ = Describe("token file I/O", func() {
 		Expect(diff).Should(BeNil())
 
 		By("GetToken test after setting files...")
-		author := api.AuthorImpl{}
+		author := api.AuthImpl{}
 		actual, err = author.GetToken(&oauth2.Config{}, tokenPath, func() (s string, e error) {
 			return
 		})

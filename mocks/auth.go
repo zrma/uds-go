@@ -8,7 +8,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type Author struct {
+type Auth struct {
 	ConfigFromJSONStub        func([]byte, ...string) (*oauth2.Config, error)
 	configFromJSONMutex       sync.RWMutex
 	configFromJSONArgsForCall []struct {
@@ -55,7 +55,7 @@ type Author struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *Author) ConfigFromJSON(arg1 []byte, arg2 ...string) (*oauth2.Config, error) {
+func (fake *Auth) ConfigFromJSON(arg1 []byte, arg2 ...string) (*oauth2.Config, error) {
 	var arg1Copy []byte
 	if arg1 != nil {
 		arg1Copy = make([]byte, len(arg1))
@@ -79,26 +79,26 @@ func (fake *Author) ConfigFromJSON(arg1 []byte, arg2 ...string) (*oauth2.Config,
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *Author) ConfigFromJSONCallCount() int {
+func (fake *Auth) ConfigFromJSONCallCount() int {
 	fake.configFromJSONMutex.RLock()
 	defer fake.configFromJSONMutex.RUnlock()
 	return len(fake.configFromJSONArgsForCall)
 }
 
-func (fake *Author) ConfigFromJSONCalls(stub func([]byte, ...string) (*oauth2.Config, error)) {
+func (fake *Auth) ConfigFromJSONCalls(stub func([]byte, ...string) (*oauth2.Config, error)) {
 	fake.configFromJSONMutex.Lock()
 	defer fake.configFromJSONMutex.Unlock()
 	fake.ConfigFromJSONStub = stub
 }
 
-func (fake *Author) ConfigFromJSONArgsForCall(i int) ([]byte, []string) {
+func (fake *Auth) ConfigFromJSONArgsForCall(i int) ([]byte, []string) {
 	fake.configFromJSONMutex.RLock()
 	defer fake.configFromJSONMutex.RUnlock()
 	argsForCall := fake.configFromJSONArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *Author) ConfigFromJSONReturns(result1 *oauth2.Config, result2 error) {
+func (fake *Auth) ConfigFromJSONReturns(result1 *oauth2.Config, result2 error) {
 	fake.configFromJSONMutex.Lock()
 	defer fake.configFromJSONMutex.Unlock()
 	fake.ConfigFromJSONStub = nil
@@ -108,7 +108,7 @@ func (fake *Author) ConfigFromJSONReturns(result1 *oauth2.Config, result2 error)
 	}{result1, result2}
 }
 
-func (fake *Author) ConfigFromJSONReturnsOnCall(i int, result1 *oauth2.Config, result2 error) {
+func (fake *Auth) ConfigFromJSONReturnsOnCall(i int, result1 *oauth2.Config, result2 error) {
 	fake.configFromJSONMutex.Lock()
 	defer fake.configFromJSONMutex.Unlock()
 	fake.ConfigFromJSONStub = nil
@@ -124,7 +124,7 @@ func (fake *Author) ConfigFromJSONReturnsOnCall(i int, result1 *oauth2.Config, r
 	}{result1, result2}
 }
 
-func (fake *Author) GetToken(arg1 *oauth2.Config, arg2 string, arg3 func() (string, error)) (*oauth2.Token, error) {
+func (fake *Auth) GetToken(arg1 *oauth2.Config, arg2 string, arg3 func() (string, error)) (*oauth2.Token, error) {
 	fake.getTokenMutex.Lock()
 	ret, specificReturn := fake.getTokenReturnsOnCall[len(fake.getTokenArgsForCall)]
 	fake.getTokenArgsForCall = append(fake.getTokenArgsForCall, struct {
@@ -144,26 +144,26 @@ func (fake *Author) GetToken(arg1 *oauth2.Config, arg2 string, arg3 func() (stri
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *Author) GetTokenCallCount() int {
+func (fake *Auth) GetTokenCallCount() int {
 	fake.getTokenMutex.RLock()
 	defer fake.getTokenMutex.RUnlock()
 	return len(fake.getTokenArgsForCall)
 }
 
-func (fake *Author) GetTokenCalls(stub func(*oauth2.Config, string, func() (string, error)) (*oauth2.Token, error)) {
+func (fake *Auth) GetTokenCalls(stub func(*oauth2.Config, string, func() (string, error)) (*oauth2.Token, error)) {
 	fake.getTokenMutex.Lock()
 	defer fake.getTokenMutex.Unlock()
 	fake.GetTokenStub = stub
 }
 
-func (fake *Author) GetTokenArgsForCall(i int) (*oauth2.Config, string, func() (string, error)) {
+func (fake *Auth) GetTokenArgsForCall(i int) (*oauth2.Config, string, func() (string, error)) {
 	fake.getTokenMutex.RLock()
 	defer fake.getTokenMutex.RUnlock()
 	argsForCall := fake.getTokenArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *Author) GetTokenReturns(result1 *oauth2.Token, result2 error) {
+func (fake *Auth) GetTokenReturns(result1 *oauth2.Token, result2 error) {
 	fake.getTokenMutex.Lock()
 	defer fake.getTokenMutex.Unlock()
 	fake.GetTokenStub = nil
@@ -173,7 +173,7 @@ func (fake *Author) GetTokenReturns(result1 *oauth2.Token, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *Author) GetTokenReturnsOnCall(i int, result1 *oauth2.Token, result2 error) {
+func (fake *Auth) GetTokenReturnsOnCall(i int, result1 *oauth2.Token, result2 error) {
 	fake.getTokenMutex.Lock()
 	defer fake.getTokenMutex.Unlock()
 	fake.GetTokenStub = nil
@@ -189,7 +189,7 @@ func (fake *Author) GetTokenReturnsOnCall(i int, result1 *oauth2.Token, result2 
 	}{result1, result2}
 }
 
-func (fake *Author) ReadFile(arg1 string) ([]byte, error) {
+func (fake *Auth) ReadFile(arg1 string) ([]byte, error) {
 	fake.readFileMutex.Lock()
 	ret, specificReturn := fake.readFileReturnsOnCall[len(fake.readFileArgsForCall)]
 	fake.readFileArgsForCall = append(fake.readFileArgsForCall, struct {
@@ -207,26 +207,26 @@ func (fake *Author) ReadFile(arg1 string) ([]byte, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *Author) ReadFileCallCount() int {
+func (fake *Auth) ReadFileCallCount() int {
 	fake.readFileMutex.RLock()
 	defer fake.readFileMutex.RUnlock()
 	return len(fake.readFileArgsForCall)
 }
 
-func (fake *Author) ReadFileCalls(stub func(string) ([]byte, error)) {
+func (fake *Auth) ReadFileCalls(stub func(string) ([]byte, error)) {
 	fake.readFileMutex.Lock()
 	defer fake.readFileMutex.Unlock()
 	fake.ReadFileStub = stub
 }
 
-func (fake *Author) ReadFileArgsForCall(i int) string {
+func (fake *Auth) ReadFileArgsForCall(i int) string {
 	fake.readFileMutex.RLock()
 	defer fake.readFileMutex.RUnlock()
 	argsForCall := fake.readFileArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *Author) ReadFileReturns(result1 []byte, result2 error) {
+func (fake *Auth) ReadFileReturns(result1 []byte, result2 error) {
 	fake.readFileMutex.Lock()
 	defer fake.readFileMutex.Unlock()
 	fake.ReadFileStub = nil
@@ -236,7 +236,7 @@ func (fake *Author) ReadFileReturns(result1 []byte, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *Author) ReadFileReturnsOnCall(i int, result1 []byte, result2 error) {
+func (fake *Auth) ReadFileReturnsOnCall(i int, result1 []byte, result2 error) {
 	fake.readFileMutex.Lock()
 	defer fake.readFileMutex.Unlock()
 	fake.ReadFileStub = nil
@@ -252,7 +252,7 @@ func (fake *Author) ReadFileReturnsOnCall(i int, result1 []byte, result2 error) 
 	}{result1, result2}
 }
 
-func (fake *Author) Invocations() map[string][][]interface{} {
+func (fake *Auth) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.configFromJSONMutex.RLock()
@@ -268,7 +268,7 @@ func (fake *Author) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *Author) recordInvocation(key string, args []interface{}) {
+func (fake *Auth) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -280,4 +280,4 @@ func (fake *Author) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ api.Author = new(Author)
+var _ api.Auth = new(Auth)

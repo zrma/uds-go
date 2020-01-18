@@ -3,13 +3,14 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
-	"io/ioutil"
-	"os"
 )
 
 // Service struct is google api service wrapper.
@@ -17,7 +18,7 @@ type Service struct {
 	*drive.Service
 	ctx context.Context
 
-	Author
+	Auth
 }
 
 const (
@@ -28,7 +29,7 @@ const (
 // NewService function returns initialized Service object's pointer
 func NewService() (*Service, error) {
 	api := &Service{
-		Author: &AuthorImpl{},
+		Auth: &AuthImpl{},
 	}
 	if err := api.Init(); err != nil {
 		return nil, err
@@ -70,22 +71,22 @@ func (api *Service) Init() error {
 	return nil
 }
 
-// AuthorImpl is impl some api for mocking test
-type AuthorImpl struct {
+// AuthImpl is impl some api for mocking test
+type AuthImpl struct {
 }
 
 // ConfigFromJSON wrapping google.ConfigFromJSON api
-func (AuthorImpl) ConfigFromJSON(jsonKey []byte, scope ...string) (*oauth2.Config, error) {
+func (AuthImpl) ConfigFromJSON(jsonKey []byte, scope ...string) (*oauth2.Config, error) {
 	return google.ConfigFromJSON(jsonKey, scope...)
 }
 
 // ReadFile wrapping ioutil.ReadFile
-func (AuthorImpl) ReadFile(filename string) ([]byte, error) {
+func (AuthImpl) ReadFile(filename string) ([]byte, error) {
 	return ioutil.ReadFile(filename)
 }
 
 // GetToken return oauth token
-func (a AuthorImpl) GetToken(config *oauth2.Config, fileName string, f func() (string, error)) (*oauth2.Token, error) {
+func (a AuthImpl) GetToken(config *oauth2.Config, fileName string, f func() (string, error)) (*oauth2.Token, error) {
 	// The file token.json stores the user's access and refresh tokens, and is
 	// created automatically when the authorization flow completes for the first
 	// time.
