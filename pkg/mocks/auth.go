@@ -4,7 +4,7 @@ package mocks
 import (
 	"sync"
 
-	"github.com/zrma/uds-go/api"
+	"github.com/zrma/uds-go/pkg/api"
 	"golang.org/x/oauth2"
 )
 
