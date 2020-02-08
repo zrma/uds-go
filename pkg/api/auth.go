@@ -1,84 +1,37 @@
 package api
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"os"
-
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
 // AuthImpl is impl some api for mocking test
-type AuthImpl struct{}
-
-// ConfigFromJSON wrapping google.ConfigFromJSON api
-func (AuthImpl) ConfigFromJSON(jsonKey []byte, scope ...string) (*oauth2.Config, error) {
-	return google.ConfigFromJSON(jsonKey, scope...)
+type AuthImpl struct {
+	ConfigFromJSON func(jsonKey []byte, scope ...string) (*oauth2.Config, error)
+	ReadFile       func(filename string) ([]byte, error)
+	GetToken       func(config *oauth2.Config, fileName string, f Func) (*oauth2.Token, error)
 }
 
-// ReadFile wrapping ioutil.ReadFile
-func (AuthImpl) ReadFile(filename string) ([]byte, error) {
-	return ioutil.ReadFile(filename)
+type Func struct {
+	TokenFromFile func(file string) (*oauth2.Token, error)
+	TokenFromWeb  func(config *oauth2.Config, getAuthCode func() (string, error)) (*oauth2.Token, error)
+	GetAuthCode   func() (string, error)
+	SaveToken     func(path string, token *oauth2.Token) error
 }
 
 // GetToken return oauth token
-func (a AuthImpl) GetToken(config *oauth2.Config, fileName string, f func() (string, error)) (*oauth2.Token, error) {
+func GetToken(config *oauth2.Config, fileName string, f Func) (*oauth2.Token, error) {
 	// The file token.json stores the user's access and refresh tokens, and is
 	// created automatically when the authorization flow completes for the first
 	// time.
-	token, err := TokenFromFile(fileName)
-	if err != nil {
-		token, err = GetTokenFromWeb(config, f)
+	token, err := f.TokenFromFile(fileName)
+	if err != nil || !token.Valid() {
+		token, err = f.TokenFromWeb(config, f.GetAuthCode)
 		if err != nil {
 			return nil, err
 		}
-		if err := SaveToken(fileName, token); err != nil {
+		if err := f.SaveToken(fileName, token); err != nil {
 			return nil, err
 		}
 	}
 	return token, nil
-}
-
-// GetTokenFromWeb request a token from the web, then returns the retrieved token.
-func GetTokenFromWeb(config *oauth2.Config, f func() (string, error)) (*oauth2.Token, error) {
-	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-	fmt.Printf("Go to the following link in your browser then type the "+
-		"authorization code: \n%v\n\n>>", authURL)
-
-	authCode, err := f()
-	if err != nil {
-		return nil, err
-	}
-
-	token, err := config.Exchange(context.TODO(), authCode)
-	if err != nil {
-		return nil, err
-	}
-	return token, nil
-}
-
-// TokenFromFile retrieves a token from a local file.
-func TokenFromFile(file string) (*oauth2.Token, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	token := &oauth2.Token{}
-	err = json.NewDecoder(f).Decode(token)
-	return token, err
-}
-
-// SaveToken saves a token to a file path.
-func SaveToken(path string, token *oauth2.Token) error {
-	fmt.Printf("Saving credential file to: %s\n", path)
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	return json.NewEncoder(f).Encode(token)
 }

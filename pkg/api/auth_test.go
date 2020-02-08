@@ -31,18 +31,25 @@ var _ = Describe("GetToken", func() {
 
 	Context("GetToken", func() {
 		It("should fail", func() {
-			author := api.AuthImpl{}
-			actual, err := author.GetToken(&config, "", func() (s string, e error) {
-				return "", errors.New("error-1234")
+			authImpl := api.AuthImpl{
+				GetToken: api.GetToken,
+			}
+			actual, err := authImpl.GetToken(&config, "", api.Func{
+				TokenFromFile: api.TokenFromFile,
+				TokenFromWeb:  api.TokenFromWeb,
+				GetAuthCode: func() (s string, e error) {
+					return "", errors.New("error-1234")
+				},
+				SaveToken: api.SaveToken,
 			})
 			Expect(err).Should(HaveOccurred())
 			Expect(actual).Should(BeNil())
 		})
 	})
 
-	Context("GetTokenFromWeb", func() {
+	Context("TokenFromWeb", func() {
 		It("read string failed", func() {
-			token, err := api.GetTokenFromWeb(&config, func() (s string, e error) {
+			token, err := api.TokenFromWeb(&config, func() (s string, e error) {
 				return "", errors.New("test")
 			})
 			Expect(err).Should(HaveOccurred())
@@ -50,7 +57,7 @@ var _ = Describe("GetToken", func() {
 		})
 
 		It("exchange failed", func() {
-			token, err := api.GetTokenFromWeb(&oauth2.Config{
+			token, err := api.TokenFromWeb(&oauth2.Config{
 				ClientID:     "client-1",
 				ClientSecret: "secret-2",
 				Endpoint: oauth2.Endpoint{
@@ -99,24 +106,64 @@ var _ = Describe("token file I/O", func() {
 			AccessToken:  "token1234",
 			TokenType:    "type123",
 			RefreshToken: "refresh123",
-			Expiry:       time.Now(),
+			Expiry:       time.Now().Add(time.Minute),
 		}
 
-		err := api.SaveToken(tokenPath, &expected)
-		Expect(err).ShouldNot(HaveOccurred())
-		actual, err := api.TokenFromFile(tokenPath)
-		Expect(err).ShouldNot(HaveOccurred())
-		diff := deep.Equal(*actual, expected)
-		Expect(diff).Should(BeNil())
-
-		By("GetToken test after setting files...")
-		author := api.AuthImpl{}
-		actual, err = author.GetToken(&oauth2.Config{}, tokenPath, func() (s string, e error) {
-			return
+		By("save succeed", func() {
+			err := api.SaveToken(tokenPath, &expected)
+			Expect(err).ShouldNot(HaveOccurred())
+			actual, err := api.TokenFromFile(tokenPath)
+			Expect(err).ShouldNot(HaveOccurred())
+			diff := deep.Equal(*actual, expected)
+			Expect(diff).Should(BeNil())
 		})
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(actual).ShouldNot(BeNil())
-		diff = deep.Equal(*actual, expected)
-		Expect(diff).Should(BeNil())
+
+		By("GetToken test after setting files...", func() {
+			author := api.AuthImpl{
+				GetToken: api.GetToken,
+			}
+			actual, err := author.GetToken(&oauth2.Config{}, tokenPath, api.Func{
+				TokenFromFile: api.TokenFromFile,
+				TokenFromWeb: func(config *oauth2.Config, getAuthCode func() (string, error)) (token *oauth2.Token, err error) {
+					return &expected, nil
+				},
+				GetAuthCode: func() (s string, err error) {
+					return "", nil
+				},
+				SaveToken: api.SaveToken,
+			})
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(actual).ShouldNot(BeNil())
+			diff := deep.Equal(*actual, expected)
+			Expect(diff).Should(BeNil())
+		})
+
+		By("token expiration has occurred", func() {
+			expected.Expiry = time.Now().Add(-time.Minute)
+			err := api.SaveToken(tokenPath, &expected)
+			Expect(err).ShouldNot(HaveOccurred())
+			actual, err := api.TokenFromFile(tokenPath)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Expect(actual.Valid()).Should(BeFalse(), "token has been expired")
+
+			author := api.AuthImpl{
+				GetToken: api.GetToken,
+			}
+			actual, err = author.GetToken(&oauth2.Config{}, tokenPath, api.Func{
+				TokenFromFile: api.TokenFromFile,
+				TokenFromWeb: func(config *oauth2.Config, getAuthCode func() (string, error)) (token *oauth2.Token, err error) {
+					expected.Expiry = time.Now().Add(time.Minute)
+					return &expected, nil
+				},
+				GetAuthCode: func() (s string, err error) {
+					return "", nil
+				},
+				SaveToken: api.SaveToken,
+			})
+
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(actual.Valid()).Should(BeTrue(), "token has been refreshed")
+		})
 	})
 })

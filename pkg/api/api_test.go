@@ -8,19 +8,25 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/zrma/uds-go/pkg/api"
-	"github.com/zrma/uds-go/pkg/mocks"
 )
 
 var _ = Describe("Service", func() {
 	var service *api.Service
-	author := &mocks.Auth{}
+	var authImpl *api.AuthImpl
 	BeforeEach(func() {
-		author.ReadFileReturns([]byte{}, nil)
-		author.ConfigFromJSONReturns(&oauth2.Config{}, nil)
-		author.GetTokenReturns(&oauth2.Token{}, nil)
-
+		authImpl = &api.AuthImpl{
+			ConfigFromJSON: func(jsonKey []byte, scope ...string) (config *oauth2.Config, err error) {
+				return &oauth2.Config{}, nil
+			},
+			ReadFile: func(filename string) (bytes []byte, err error) {
+				return []byte{}, nil
+			},
+			GetToken: func(config *oauth2.Config, fileName string, f api.Func) (token *oauth2.Token, err error) {
+				return &oauth2.Token{}, nil
+			},
+		}
 		service = &api.Service{
-			Auth: author,
+			AuthImpl: authImpl,
 		}
 	})
 
@@ -31,7 +37,9 @@ var _ = Describe("Service", func() {
 
 	It("handle credentials.json reading error", func() {
 		expected := errors.New("read file error")
-		author.ReadFileReturns(nil, expected)
+		authImpl.ReadFile = func(filename string) (bytes []byte, err error) {
+			return nil, expected
+		}
 		err := service.Init()
 		Expect(err).Should(HaveOccurred())
 		Expect(err).Should(Equal(expected))
@@ -39,7 +47,9 @@ var _ = Describe("Service", func() {
 
 	It("handle json config parsing error", func() {
 		expected := errors.New("config parse from json")
-		author.ConfigFromJSONReturns(nil, expected)
+		authImpl.ConfigFromJSON = func(jsonKey []byte, scope ...string) (config *oauth2.Config, err error) {
+			return nil, expected
+		}
 		err := service.Init()
 		Expect(err).Should(HaveOccurred())
 		Expect(err).Should(Equal(expected))
@@ -47,7 +57,9 @@ var _ = Describe("Service", func() {
 
 	It("GetToken error", func() {
 		expected := errors.New("get token error")
-		author.GetTokenReturns(nil, expected)
+		authImpl.GetToken = func(config *oauth2.Config, fileName string, f api.Func) (token *oauth2.Token, err error) {
+			return nil, expected
+		}
 		err := service.Init()
 		Expect(err).Should(HaveOccurred())
 		Expect(err).Should(Equal(expected))
