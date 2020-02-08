@@ -4,13 +4,14 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// AuthImpl is impl some api for mocking test
+// AuthImpl is implementing some api for mocking test
 type AuthImpl struct {
 	ConfigFromJSON func(jsonKey []byte, scope ...string) (*oauth2.Config, error)
 	ReadFile       func(filename string) ([]byte, error)
 	GetToken       func(config *oauth2.Config, fileName string, f Func) (*oauth2.Token, error)
 }
 
+// Func is internal factory functions to call with dependency
 type Func struct {
 	TokenFromFile func(file string) (*oauth2.Token, error)
 	TokenFromWeb  func(config *oauth2.Config, getAuthCode func() (string, error)) (*oauth2.Token, error)
