@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
+	"os/exec"
+	"runtime"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -80,11 +83,31 @@ func (api *Service) Init() error {
 	return nil
 }
 
+func openBrowser(url string) error {
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		//noinspection SpellCheckingInspection
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	return err
+}
+
 // TokenFromWeb request a token from the web, then returns the retrieved token.
 func TokenFromWeb(config *oauth2.Config, getAuthCode func() (string, error)) (*oauth2.Token, error) {
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	fmt.Printf("Go to the following link in your browser then type the "+
 		"authorization code: \n%v\n\n>>", authURL)
+	if err := openBrowser(authURL); err != nil {
+		log.Fatal(err)
+	}
 
 	authCode, err := getAuthCode()
 	if err != nil {
