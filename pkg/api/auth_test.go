@@ -49,7 +49,9 @@ var _ = Describe("GetToken", func() {
 
 	Context("TokenFromWeb", func() {
 		It("read string failed", func() {
-			token, err := api.TokenFromWeb(&config, func() (s string, e error) {
+			token, err := api.TokenFromWeb(&config, func(s string) error {
+				return errors.New("impossible to open a browser")
+			}, func() (s string, e error) {
 				return "", errors.New("test")
 			})
 			Expect(err).Should(HaveOccurred())
@@ -67,6 +69,8 @@ var _ = Describe("GetToken", func() {
 				},
 				RedirectURL: "localhost-3",
 				Scopes:      []string{drive.DriveScope},
+			}, func(s string) error {
+				return errors.New("impossible to open a browser")
 			}, func() (s string, e error) {
 				return "token-1234", nil
 			})
@@ -124,7 +128,7 @@ var _ = Describe("token file I/O", func() {
 			}
 			actual, err := author.GetToken(&oauth2.Config{}, tokenPath, api.Func{
 				TokenFromFile: api.TokenFromFile,
-				TokenFromWeb: func(config *oauth2.Config, getAuthCode func() (string, error)) (token *oauth2.Token, err error) {
+				TokenFromWeb: func(config *oauth2.Config, openBrowser func(string) error, getAuthCode func() (string, error)) (token *oauth2.Token, err error) {
 					return &expected, nil
 				},
 				GetAuthCode: func() (s string, err error) {
@@ -152,7 +156,7 @@ var _ = Describe("token file I/O", func() {
 			}
 			actual, err = author.GetToken(&oauth2.Config{}, tokenPath, api.Func{
 				TokenFromFile: api.TokenFromFile,
-				TokenFromWeb: func(config *oauth2.Config, getAuthCode func() (string, error)) (token *oauth2.Token, err error) {
+				TokenFromWeb: func(config *oauth2.Config, openBrowser func(string) error, getAuthCode func() (string, error)) (token *oauth2.Token, err error) {
 					expected.Expiry = time.Now().Add(time.Minute)
 					return &expected, nil
 				},

@@ -14,7 +14,8 @@ type AuthImpl struct {
 // Func is internal factory functions to call with dependency
 type Func struct {
 	TokenFromFile func(file string) (*oauth2.Token, error)
-	TokenFromWeb  func(config *oauth2.Config, getAuthCode func() (string, error)) (*oauth2.Token, error)
+	TokenFromWeb  func(config *oauth2.Config, openBrowser func(string) error, getAuthCode func() (string, error)) (*oauth2.Token, error)
+	OpenBrowser   func(string) error
 	GetAuthCode   func() (string, error)
 	SaveToken     func(path string, token *oauth2.Token) error
 }
@@ -26,7 +27,7 @@ func GetToken(config *oauth2.Config, fileName string, f Func) (*oauth2.Token, er
 	// time.
 	token, err := f.TokenFromFile(fileName)
 	if err != nil || !token.Valid() {
-		token, err = f.TokenFromWeb(config, f.GetAuthCode)
+		token, err = f.TokenFromWeb(config, f.OpenBrowser, f.GetAuthCode)
 		if err != nil {
 			return nil, err
 		}

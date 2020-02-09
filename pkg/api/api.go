@@ -2,9 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"runtime"
@@ -60,6 +63,7 @@ func (api *Service) Init() error {
 	token, err := api.GetToken(config, tokenFile, Func{
 		TokenFromFile: TokenFromFile,
 		TokenFromWeb:  TokenFromWeb,
+		OpenBrowser:   OpenBrowser,
 		GetAuthCode: func() (s string, e error) {
 			_, e = fmt.Scan(&s)
 			return
@@ -83,7 +87,8 @@ func (api *Service) Init() error {
 	return nil
 }
 
-func openBrowser(url string) error {
+// OpenBrowser help to oauth with a browser on specific os platform
+func OpenBrowser(url string) error {
 	var err error
 
 	switch runtime.GOOS {
@@ -100,20 +105,81 @@ func openBrowser(url string) error {
 	return err
 }
 
-// TokenFromWeb request a token from the web, then returns the retrieved token.
-func TokenFromWeb(config *oauth2.Config, getAuthCode func() (string, error)) (*oauth2.Token, error) {
-	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-	fmt.Printf("Go to the following link in your browser then type the "+
-		"authorization code: \n%v\n\n>>", authURL)
-	if err := openBrowser(authURL); err != nil {
-		log.Fatal(err)
+func getTokenWithBrowser() (string, error) {
+	tokenCh := make(chan string)
+	handler := http.NewServeMux()
+	handler.HandleFunc("/auth/callback/", func(w http.ResponseWriter, r *http.Request) {
+		const response = `
+<body>
+Finished
+</body>
+`
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(response))
+		tokenCh <- r.URL.RawQuery
+	})
+	srv := &http.Server{
+		Addr:    ":1333",
+		Handler: handler,
 	}
+	go func() {
+		if err := srv.ListenAndServe(); err != srv.ListenAndServe() {
+			log.Fatalf("ListenAndServe(): %v", err)
+		}
+	}()
 
-	authCode, err := getAuthCode()
+	rawQuery := <-tokenCh
+	m, err := url.ParseQuery(rawQuery)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
+	authCodes, ok := m["code"]
+	if !ok || len(authCodes) == 0 {
+		return "", errors.New(fmt.Sprintln("invalid callback params", rawQuery))
+	}
+
+	go func() {
+		defer close(tokenCh)
+		if err := srv.Shutdown(context.Background()); err != nil {
+			log.Fatalf("srv.Shutdown(): %v", err)
+		}
+	}()
+	return authCodes[0], nil
+}
+
+// TokenFromWeb request a token from the web, then returns the retrieved token.
+func TokenFromWeb(
+	config *oauth2.Config,
+	openBrowser func(string) error,
+	getAuthCode func() (string, error),
+) (*oauth2.Token, error) {
+	config.RedirectURL = "http://localhost:1333/auth/callback/"
+
+	if openBrowser == nil {
+		openBrowser = func(s string) error {
+			return errors.New("impossible to open a browser")
+		}
+	}
+	var authCode string
+	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+	if err := openBrowser(authURL); err != nil {
+		config.RedirectURL = "urn:ietf:wg:oauth:2.0:oob"
+		authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+		fmt.Printf("Go to the following link in your browser then type the authorization code: \n%v\n\n>>", authURL)
+		if authCode, err = getAuthCode(); err != nil {
+			return nil, err
+		}
+	} else if authCode, err = getTokenWithBrowser(); err != nil {
+		config.RedirectURL = "urn:ietf:wg:oauth:2.0:oob"
+		authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+		fmt.Printf("Go to the following link in your browser then type the authorization code: \n%v\n\n>>", authURL)
+		if authCode, err = getAuthCode(); err != nil {
+			return nil, err
+		}
+	}
+
+	fmt.Println(authCode)
 	token, err := config.Exchange(context.TODO(), authCode)
 	if err != nil {
 		return nil, err
