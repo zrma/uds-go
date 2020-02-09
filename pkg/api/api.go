@@ -148,39 +148,39 @@ Finished
 	return authCodes[0], nil
 }
 
-// TokenFromWeb request a token from the web, then returns the retrieved token.
-func TokenFromWeb(
-	config *oauth2.Config,
-	openBrowser func(string) error,
-	getAuthCode func() (string, error),
-) (*oauth2.Token, error) {
-	config.RedirectURL = "http://localhost:1333/auth/callback/"
+func getAuthCodeOffline(config *oauth2.Config, f Func) (string, error) {
+	config.RedirectURL = "urn:ietf:wg:oauth:2.0:oob"
+	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+	fmt.Printf("Go to the following link in your browser then type the authorization code: \n%v\n\n>>", authURL)
+	return f.GetAuthCode()
+}
 
-	if openBrowser == nil {
-		openBrowser = func(s string) error {
+func getAuthCode(config *oauth2.Config, f Func) (string, error) {
+	config.RedirectURL = "http://localhost:1333/auth/callback/"
+	if f.OpenBrowser == nil {
+		f.OpenBrowser = func(s string) error {
 			return errors.New("impossible to open a browser")
 		}
 	}
 	var authCode string
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-	if err := openBrowser(authURL); err != nil {
-		config.RedirectURL = "urn:ietf:wg:oauth:2.0:oob"
-		authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-		fmt.Printf("Go to the following link in your browser then type the authorization code: \n%v\n\n>>", authURL)
-		if authCode, err = getAuthCode(); err != nil {
-			return nil, err
-		}
+	if err := f.OpenBrowser(authURL); err != nil {
+		return getAuthCodeOffline(config, f)
 	} else if authCode, err = getTokenWithBrowser(); err != nil {
-		config.RedirectURL = "urn:ietf:wg:oauth:2.0:oob"
-		authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-		fmt.Printf("Go to the following link in your browser then type the authorization code: \n%v\n\n>>", authURL)
-		if authCode, err = getAuthCode(); err != nil {
-			return nil, err
-		}
+		return getAuthCodeOffline(config, f)
+	}
+	return authCode, nil
+}
+
+// TokenFromWeb request a token from the web, then returns the retrieved token.
+func TokenFromWeb(config *oauth2.Config, f Func) (*oauth2.Token, error) {
+	authCode, err := getAuthCode(config, f)
+	if err != nil {
+		return nil, err
 	}
 
 	fmt.Println(authCode)
-	token, err := config.Exchange(context.TODO(), authCode)
+	token, err := config.Exchange(context.Background(), authCode)
 	if err != nil {
 		return nil, err
 	}
