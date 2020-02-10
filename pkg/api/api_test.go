@@ -2,8 +2,14 @@ package api_test
 
 import (
 	"errors"
+	"fmt"
+	"net"
+	"net/http"
+	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"golang.org/x/oauth2"
 
@@ -64,4 +70,52 @@ var _ = Describe("Service", func() {
 		Expect(err).Should(HaveOccurred())
 		Expect(err).Should(Equal(expected))
 	})
+})
+
+var _ = Describe("oauth callback server test", func() {
+	const expected = "expected"
+
+	type testData struct {
+		query   string
+		success bool
+		err     error
+	}
+
+	DescribeTable("test case", func(data testData) {
+		ln, err := net.Listen("tcp", ":0")
+		Expect(err).ShouldNot(HaveOccurred())
+
+		addr := strings.Split(ln.Addr().String(), "]")[1]
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			reqUrl := fmt.Sprintf("http://localhost%s/auth/callback/%s", addr, data.query)
+			req, err2 := http.NewRequest("GET", reqUrl, nil)
+			Expect(err2).ShouldNot(HaveOccurred())
+
+			client := &http.Client{}
+			resp, err2 := client.Do(req)
+			Expect(err2).ShouldNot(HaveOccurred())
+
+			defer resp.Body.Close()
+		}()
+
+		actual, err := api.GetTokenWithBrowser(ln)
+		if data.success {
+			Expect(err).ShouldNot(HaveOccurred())
+		} else {
+			Expect(err).Should(HaveOccurred())
+		}
+		Expect(actual == expected).Should(Equal(data.success))
+	},
+		Entry("success", testData{
+			query:   fmt.Sprintf("?code=%s", expected),
+			success: true,
+			err:     nil,
+		}),
+		Entry("empty param", testData{
+			query:   "",
+			success: false,
+			err:     errors.New("invalid callback params \n"),
+		}),
+	)
 })

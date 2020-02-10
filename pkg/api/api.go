@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -87,7 +89,8 @@ func (api *Service) Init() error {
 	return nil
 }
 
-func getTokenWithBrowser() (string, error) {
+// GetTokenWithBrowser function receive token with localhost callback server
+func GetTokenWithBrowser(ln net.Listener) (string, error) {
 	tokenCh := make(chan string)
 	handler := http.NewServeMux()
 	handler.HandleFunc("/auth/callback/", func(w http.ResponseWriter, r *http.Request) {
@@ -100,13 +103,23 @@ Finished
 		w.Write([]byte(response))
 		tokenCh <- r.URL.RawQuery
 	})
+
+	if ln == nil {
+		var err error
+		ln, err = net.Listen("tcp", ":0")
+		if err != nil {
+			return "", err
+		}
+	}
+
+	addr := strings.Split(ln.Addr().String(), "]")[1]
 	srv := &http.Server{
-		Addr:    ":1333",
+		Addr:    addr,
 		Handler: handler,
 	}
 	go func() {
-		if err := srv.ListenAndServe(); err != srv.ListenAndServe() {
-			log.Fatalf("ListenAndServe(): %v", err)
+		if err := srv.Serve(ln); err != nil {
+			log.Println("callback listen server closed", err)
 		}
 	}()
 
@@ -148,7 +161,7 @@ func getAuthCode(config *oauth2.Config, f Func) (string, error) {
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	if err := f.OpenBrowser(authURL); err != nil {
 		return getAuthCodeOffline(config, f)
-	} else if authCode, err = getTokenWithBrowser(); err != nil {
+	} else if authCode, err = GetTokenWithBrowser(nil); err != nil {
 		return getAuthCodeOffline(config, f)
 	}
 	return authCode, nil
