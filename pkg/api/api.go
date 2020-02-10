@@ -9,14 +9,14 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
-	"runtime"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
+
+	"github.com/zrma/uds-go/pkg/api/browser"
 )
 
 // NewService function returns initialized Service object's pointer
@@ -63,7 +63,7 @@ func (api *Service) Init() error {
 	token, err := api.GetToken(config, tokenFile, Func{
 		TokenFromFile: TokenFromFile,
 		TokenFromWeb:  TokenFromWeb,
-		OpenBrowser:   OpenBrowser,
+		OpenBrowser:   browser.Open,
 		GetAuthCode: func() (s string, e error) {
 			_, e = fmt.Scan(&s)
 			return
@@ -85,24 +85,6 @@ func (api *Service) Init() error {
 
 	api.Service = driveService
 	return nil
-}
-
-// OpenBrowser help to oauth with a browser on specific os platform
-func OpenBrowser(url string) error {
-	var err error
-
-	switch runtime.GOOS {
-	case "linux":
-		err = exec.Command("xdg-open", url).Start()
-	case "windows":
-		//noinspection SpellCheckingInspection
-		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
-	case "darwin":
-		err = exec.Command("open", url).Start()
-	default:
-		err = fmt.Errorf("unsupported platform")
-	}
-	return err
 }
 
 func getTokenWithBrowser() (string, error) {
