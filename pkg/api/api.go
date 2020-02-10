@@ -137,7 +137,7 @@ Finished
 	go func() {
 		defer close(tokenCh)
 		if err := srv.Shutdown(context.Background()); err != nil {
-			log.Fatalf("srv.Shutdown(): %v", err)
+			log.Println("callback listen server shutdown", err)
 		}
 	}()
 	return authCodes[0], nil
@@ -151,7 +151,14 @@ func getAuthCodeOffline(config *oauth2.Config, f Func) (string, error) {
 }
 
 func getAuthCode(config *oauth2.Config, f Func) (string, error) {
-	config.RedirectURL = "http://localhost:1333/auth/callback/"
+	ln, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return "", err
+	}
+	defer ln.Close()
+
+	addr := strings.Split(ln.Addr().String(), "]")
+	config.RedirectURL = fmt.Sprintf("http://localhost%s/auth/callback/", addr)
 	if f.OpenBrowser == nil {
 		f.OpenBrowser = func(s string) error {
 			return errors.New("impossible to open a browser")
@@ -161,7 +168,7 @@ func getAuthCode(config *oauth2.Config, f Func) (string, error) {
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	if err := f.OpenBrowser(authURL); err != nil {
 		return getAuthCodeOffline(config, f)
-	} else if authCode, err = GetTokenWithBrowser(nil); err != nil {
+	} else if authCode, err = GetTokenWithBrowser(ln); err != nil {
 		return getAuthCodeOffline(config, f)
 	}
 	return authCode, nil
