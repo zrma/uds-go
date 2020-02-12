@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -92,6 +93,10 @@ func (api *Service) Init() error {
 // GetTokenWithBrowser function receive token with localhost callback server
 func GetTokenWithBrowser(ln net.Listener) (string, error) {
 	tokenCh := make(chan string)
+	defer close(tokenCh)
+
+	var do sync.Once
+
 	handler := http.NewServeMux()
 	handler.HandleFunc("/auth/callback/", func(w http.ResponseWriter, r *http.Request) {
 		const response = `
@@ -101,7 +106,9 @@ Finished
 `
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(response))
-		tokenCh <- r.URL.RawQuery
+		do.Do(func() {
+			tokenCh <- r.URL.RawQuery
+		})
 	})
 
 	if ln == nil {
@@ -134,12 +141,9 @@ Finished
 		return "", errors.New(fmt.Sprintln("invalid callback params", rawQuery))
 	}
 
-	go func() {
-		defer close(tokenCh)
-		if err := srv.Shutdown(context.Background()); err != nil {
-			log.Println("callback listen server shutdown", err)
-		}
-	}()
+	if err := srv.Shutdown(context.Background()); err != nil {
+		log.Println("callback listen server shutdown", err)
+	}
 	return authCodes[0], nil
 }
 
@@ -157,7 +161,7 @@ func getAuthCode(config *oauth2.Config, f Func) (string, error) {
 	}
 	defer ln.Close()
 
-	addr := strings.Split(ln.Addr().String(), "]")
+	addr := strings.Split(ln.Addr().String(), "]")[1]
 	config.RedirectURL = fmt.Sprintf("http://localhost%s/auth/callback/", addr)
 	if f.OpenBrowser == nil {
 		f.OpenBrowser = func(s string) error {
