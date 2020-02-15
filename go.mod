@@ -7,7 +7,6 @@ require (
 	github.com/Songmu/goxz v0.6.0 // indirect
 	github.com/go-test/deep v1.0.2
 	github.com/mattn/goveralls v0.0.5 // indirect
-	github.com/motemen/gobump v0.1.0 // indirect
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/x-motemen/gobump v0.2.0 // indirect
