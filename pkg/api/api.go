@@ -90,6 +90,44 @@ func (api *Service) Init() error {
 	return nil
 }
 
+// GetBaseFolder locate the base UDS folder
+func (api *Service) GetBaseFolder() error {
+	r, err := api.Files.List().
+		Q("properties has {key='udsRoot' and value='true'} and trashed=false").
+		PageSize(1).
+		Fields("nextPageToken, files(id, name, properties)").Do()
+	if err != nil {
+		return errors.New(fmt.Sprintf("Unable to retrieve files: %v", err))
+	}
+	fmt.Println("Files:")
+
+	if len(r.Files) == 0 {
+		fmt.Println("No files found.")
+		return api.createRootFolder()
+	} else {
+		for _, i := range r.Files {
+			fmt.Printf("%s (%s)\n", i.Name, i.Id)
+		}
+	}
+	return nil
+}
+
+func (api *Service) createRootFolder() error {
+	file, err := api.Files.Create(&drive.File{
+		Name:       "UDS Root",
+		MimeType:   "application/vnd.google-apps.folder",
+		Properties: map[string]string{"udsRoot": "true"},
+		Parents:    []string{},
+	}).Fields("id").Do()
+	if err != nil {
+		return errors.New(fmt.Sprintf("Unable to create folder: %v", err))
+	}
+	fmt.Println(file)
+	fmt.Println(file.Name)
+
+	return nil
+}
+
 // GetTokenWithBrowser function receive token with localhost callback server
 func GetTokenWithBrowser(ln net.Listener) (string, error) {
 	tokenCh := make(chan string)
