@@ -12,7 +12,7 @@ func main() {
 		log.Fatalf("Unable to retrieve NewService: %v", err)
 	}
 
-	if err := driveService.GetBaseFolder(); err != nil {
+	if _, err := driveService.GetBaseFolder(); err != nil {
 		log.Fatalln(err)
 	}
 }

@@ -91,28 +91,30 @@ func (api *Service) Init() error {
 }
 
 // GetBaseFolder locate the base UDS folder
-func (api *Service) GetBaseFolder() error {
+func (api *Service) GetBaseFolder() (*drive.File, error) {
 	r, err := api.Files.List().
 		Q("properties has {key='udsRoot' and value='true'} and trashed=false").
 		PageSize(1).
 		Fields("nextPageToken, files(id, name, properties)").Do()
 	if err != nil {
-		return errors.New(fmt.Sprintf("Unable to retrieve files: %v", err))
+		return nil, errors.New(fmt.Sprintf("Unable to retrieve files: %v", err))
 	}
 	fmt.Println("Files:")
 
-	if len(r.Files) == 0 {
+	fileLength := len(r.Files)
+	if fileLength == 0 {
 		fmt.Println("No files found.")
 		return api.createRootFolder()
-	} else {
+	} else if fileLength == 1 {
 		for _, i := range r.Files {
 			fmt.Printf("%s (%s)\n", i.Name, i.Id)
 		}
+		return r.Files[0], nil
 	}
-	return nil
+	return nil, errors.New(fmt.Sprintf("Multiple UDS Roots found."))
 }
 
-func (api *Service) createRootFolder() error {
+func (api *Service) createRootFolder() (*drive.File, error) {
 	file, err := api.Files.Create(&drive.File{
 		Name:       "UDS Root",
 		MimeType:   "application/vnd.google-apps.folder",
@@ -120,12 +122,12 @@ func (api *Service) createRootFolder() error {
 		Parents:    []string{},
 	}).Fields("id").Do()
 	if err != nil {
-		return errors.New(fmt.Sprintf("Unable to create folder: %v", err))
+		return nil, errors.New(fmt.Sprintf("Unable to create folder: %v", err))
 	}
 	fmt.Println(file)
 	fmt.Println(file.Name)
 
-	return nil
+	return file, nil
 }
 
 // GetTokenWithBrowser function receive token with localhost callback server
