@@ -20,6 +20,7 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/zrma/uds-go/pkg/api/browser"
+	"github.com/zrma/uds-go/pkg/uds"
 )
 
 // NewService function returns initialized Service object's pointer
@@ -115,19 +116,27 @@ func (api *Service) GetBaseFolder() (*drive.File, error) {
 }
 
 func (api *Service) createRootFolder() (*drive.File, error) {
-	file, err := api.Files.Create(&drive.File{
+	return api.Files.Create(&drive.File{
 		Name:       "UDS Root",
 		MimeType:   "application/vnd.google-apps.folder",
 		Properties: map[string]string{"udsRoot": "true"},
 		Parents:    []string{},
 	}).Fields("id").Do()
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Unable to create folder: %v", err))
-	}
-	fmt.Println(file)
-	fmt.Println(file.Name)
+}
 
-	return file, nil
+func (api *Service) createMediaFolder(media *uds.File) (*drive.File, error) {
+	return api.Files.Create(&drive.File{
+		Name:     media.Name,
+		MimeType: "application/vnd.google-apps.folder",
+		Properties: map[string]string{
+			"udsRoot":      "true",
+			"size":         media.Size,
+			"size_numeric": media.SizeNumeric,
+			"encoded_size": media.EncodedSize,
+			"md5":          media.MD5,
+		},
+		Parents: media.Parents,
+	}).Fields("id").Do()
 }
 
 // GetTokenWithBrowser function receive token with localhost callback server
