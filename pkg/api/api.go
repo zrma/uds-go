@@ -100,7 +100,6 @@ func (api *Service) GetBaseFolder() (*drive.File, error) {
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Unable to retrieve files: %v", err))
 	}
-	fmt.Println("Files:")
 
 	fileLength := len(r.Files)
 	if fileLength == 0 {
@@ -137,6 +136,39 @@ func (api *Service) createMediaFolder(media *uds.File) (*drive.File, error) {
 		},
 		Parents: media.Parents,
 	}).Fields("id").Do()
+}
+
+func (api *Service) listFiles(query string) ([]*uds.File, error) {
+	q := "properties has {key='uds' and value='true'} and trashed=false"
+	if query != "" {
+		q += fmt.Sprintf(" and name contains '%s'", query)
+	}
+
+	r, err := api.Files.List().
+		Q(q).
+		PageSize(1000).
+		Fields("nextPageToken, files(id, name, properties, mimeType)").Do()
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Unable to retrieve files: %v", err))
+	}
+
+	var files []*uds.File
+	for _, f := range r.Files {
+		props := f.Properties
+		file := &uds.File{
+			Name:        props["name"],
+			Mime:        props["mimeType"],
+			Size:        props["size"],
+			EncodedSize: props["encoded_size"],
+			SizeNumeric: props["size_numeric"],
+			ID:          props["id"],
+			MD5:         props["md5Checksum"],
+			Shared:      props["shared"] == "true",
+		}
+		file.Init()
+		files = append(files, file)
+	}
+	return files, nil
 }
 
 // GetTokenWithBrowser function receive token with localhost callback server
