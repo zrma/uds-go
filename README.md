@@ -6,12 +6,26 @@
 [![Coverage Status](https://coveralls.io/repos/github/zrma/uds-go/badge.svg?branch=master)](https://coveralls.io/github/zrma/uds-go?branch=master)
 [![Codecov Status](https://codecov.io/gh/zrma/uds-go/branch/master/graphs/badge.svg)](https://codecov.io/gh/zrma/uds-go)
 
+----
+
 Convert to go - https://github.com/stewartmcgown/uds
 
 
-#### Requirement
-> [Go](https://golang.org) (v1.12+)
+## Requirement
 
+> [Go](https://golang.org) (v1.14+)
 
-#### Test
+## Initialize
+
+```bash
+$ git clone https://github.com/zrma/uds-go.git
+```
+
+## pre-commit
+
+```bash
+$ brew install pre-commit
+$ pre-commit install
+
+## Test
 > $ make test
