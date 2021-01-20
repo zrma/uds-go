@@ -98,7 +98,7 @@ func (api *Service) GetBaseFolder() (*drive.File, error) {
 		PageSize(1).
 		Fields("nextPageToken, files(id, name, properties)").Do()
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Unable to retrieve files: %v", err))
+		return nil, fmt.Errorf("unable to retrieve files: %v", err)
 	}
 
 	fileLength := len(r.Files)
@@ -111,7 +111,7 @@ func (api *Service) GetBaseFolder() (*drive.File, error) {
 		}
 		return r.Files[0], nil
 	}
-	return nil, errors.New(fmt.Sprintf("Multiple UDS Roots found."))
+	return nil, fmt.Errorf("multiple UDS Roots found")
 }
 
 func (api *Service) createRootFolder() (*drive.File, error) {
@@ -123,7 +123,7 @@ func (api *Service) createRootFolder() (*drive.File, error) {
 	}).Fields("id").Do()
 }
 
-func (api *Service) createMediaFolder(media *uds.File) (*drive.File, error) {
+func (api *Service) CreateMediaFolder(media *uds.File) (*drive.File, error) {
 	return api.Files.Create(&drive.File{
 		Name:     media.Name,
 		MimeType: "application/vnd.google-apps.folder",
@@ -138,7 +138,7 @@ func (api *Service) createMediaFolder(media *uds.File) (*drive.File, error) {
 	}).Fields("id").Do()
 }
 
-func (api *Service) listFiles(query string) ([]*uds.File, error) {
+func (api *Service) ListFiles(query string) ([]*uds.File, error) {
 	q := "properties has {key='uds' and value='true'} and trashed=false"
 	if query != "" {
 		q += fmt.Sprintf(" and name contains '%s'", query)
@@ -149,7 +149,7 @@ func (api *Service) listFiles(query string) ([]*uds.File, error) {
 		PageSize(1000).
 		Fields("nextPageToken, files(id, name, properties, mimeType)").Do()
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Unable to retrieve files: %v", err))
+		return nil, fmt.Errorf("unable to retrieve files: %v", err)
 	}
 
 	var files []*uds.File
@@ -186,7 +186,7 @@ Finished
 </body>
 `
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 		do.Do(func() {
 			tokenCh <- r.URL.RawQuery
 		})

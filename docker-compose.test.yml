@@ -1,0 +1,8 @@
+version: '3.2'
+
+services:
+  uds-go-test:
+    container_name: uds-go-test
+    build:
+      context: .
+      dockerfile: ./docker/test/Dockerfile
