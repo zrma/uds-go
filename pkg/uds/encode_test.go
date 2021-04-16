@@ -1,20 +1,24 @@
 package uds
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-var _ = Describe("validate base64 encoding", func() {
-	str := `abc123!?$*&()'-=@~`
-	base64 := `YWJjMTIzIT8kKiYoKSctPUB+`
+func TestEncodeDecode(t *testing.T) {
+	const (
+		str    = `abc123!?$*&()'-=@~`
+		base64 = `YWJjMTIzIT8kKiYoKSctPUB+`
+	)
 
-	It("should encode", func() {
-		Expect(encode([]byte(str))).Should(Equal(base64))
+	t.Run("should encode", func(t *testing.T) {
+		assert.Equal(t, base64, encode([]byte(str)))
 	})
-	It("should decode", func() {
+
+	t.Run("should decode", func(t *testing.T) {
 		actual, err := decode(base64)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(actual).Should(Equal([]byte(str)))
+		assert.NoError(t, err)
+		assert.Equal(t, []byte(str), actual)
 	})
-})
+}

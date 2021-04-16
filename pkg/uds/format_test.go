@@ -1,42 +1,41 @@
 package uds
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-var _ = Describe("validate util function", func() {
-	Context("format function", func() {
-		type testData struct {
-			numOfBytes int64
-			expected   string
-			ok         bool
-		}
+func TestUtil(t *testing.T) {
+	const (
+		kb = 1024
+		mb = kb * 1024
+		gb = mb * 1024
+		tb = gb * 1024
+	)
 
-		const (
-			kb = 1024
-			mb = kb * 1024
-			gb = mb * 1024
-			tb = gb * 1024
-		)
-
-		DescribeTable("size table", func(data testData) {
-			size, err := format(data.numOfBytes)
-			if data.ok {
-				Expect(err).ShouldNot(HaveOccurred())
+	for _, tc := range []struct {
+		description string
+		given       int64
+		want        string
+		ok          bool
+	}{
+		{"invalid - negative size", -1, "", false},
+		{"", 1000, "1000.0 bytes", true},
+		{"", kb, "1.0 KB", true},
+		{"", 800 * kb, "800.0 KB", true},
+		{"", mb, "1.0 MB", true},
+		{"", tb, "1.0 TB", true},
+		{"", 1024 * tb, "1024.0 TB", true},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			size, err := format(tc.given)
+			if tc.ok {
+				assert.NoError(t, err)
 			} else {
-				Expect(err).Should(HaveOccurred())
+				assert.Error(t, err)
 			}
-			Expect(size).Should(Equal(data.expected))
-		},
-			Entry("invalid - negative size", testData{-1, "", false}),
-			Entry("", testData{1000, "1000.0 bytes", true}),
-			Entry("", testData{kb, "1.0 KB", true}),
-			Entry("", testData{800 * kb, "800.0 KB", true}),
-			Entry("", testData{mb, "1.0 MB", true}),
-			Entry("", testData{tb, "1.0 TB", true}),
-			Entry("", testData{1024 * tb, "1024.0 TB", true}),
-		)
-	})
-})
+			assert.Equal(t, tc.want, size)
+		})
+	}
+}

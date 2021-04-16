@@ -14,7 +14,7 @@ type File struct {
 	Shared bool
 }
 
-// Init method initialize File struct's parents not to be nil
+// Init method initialize parents of File struct not to be nil
 func (f *File) Init() {
 	if f.Parents == nil {
 		f.Parents = []string{"root"}
@@ -32,7 +32,7 @@ type Chunk struct {
 	RangeEnd int64
 }
 
-// Init method initialize Chunk struct's range end boundary
+// Init method initialize parents of Chunk struct range end boundary
 func (c *Chunk) Init() {
 	const chunkReadLengthBytes int64 = 750000
 	c.RangeEnd = (c.Part + 1) * chunkReadLengthBytes
