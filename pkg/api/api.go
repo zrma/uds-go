@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/spf13/afero"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -24,6 +25,12 @@ import (
 	"github.com/zrma/uds-go/pkg/api/browser"
 	"github.com/zrma/uds-go/pkg/uds"
 )
+
+var AppFs afero.Fs = nil
+
+func init() {
+	AppFs = afero.NewOsFs()
+}
 
 // NewService function returns initialized Service object's pointer
 func NewService() (*Service, error) {
@@ -281,7 +288,7 @@ func TokenFromWeb(config *oauth2.Config, f Func) (*oauth2.Token, error) {
 
 // TokenFromFile retrieves a token from a local file.
 func TokenFromFile(file string) (*oauth2.Token, error) {
-	f, err := os.Open(file)
+	f, err := AppFs.Open(file)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +301,7 @@ func TokenFromFile(file string) (*oauth2.Token, error) {
 // SaveToken saves a token to a file path.
 func SaveToken(path string, token *oauth2.Token) error {
 	fmt.Printf("Saving credential file to: %s\n", path)
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	f, err := AppFs.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}

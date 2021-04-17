@@ -161,22 +161,29 @@ func setupTmpFolder(t *testing.T) string {
 		prefix    = "tmp_"
 		tokenName = "token1234.json"
 	)
-	tmpPath := os.TempDir()
-	tmpPath = filepath.Join(tmpPath, "uds-go")
-	tokenPath := filepath.Join(tmpPath, prefix+tokenName)
 
-	if _, err := os.Stat(tmpPath); os.IsNotExist(err) {
-		err := os.Mkdir(tmpPath, os.ModePerm)
+	api.AppFs = afero.NewMemMapFs()
+	afs := &afero.Afero{Fs: api.AppFs}
+
+	tmpPath, err := afs.TempDir("tmp", prefix)
+	assert.NoError(t, err)
+	tmpPath = filepath.Join(tmpPath, "uds-go")
+	tokenPath := filepath.Join(tmpPath, tokenName)
+
+	if _, err := afs.Stat(tmpPath); os.IsNotExist(err) {
+		err := afs.Mkdir(tmpPath, os.ModePerm)
 		assert.NoError(t, err)
 
 		fmt.Println("create", tmpPath)
 	}
 
 	t.Cleanup(func() {
-		err := os.RemoveAll(tmpPath)
+		err := afs.RemoveAll(tmpPath)
 		assert.NoError(t, err)
 
 		fmt.Println("remove", tmpPath)
+
+		api.AppFs = afero.NewOsFs()
 	})
 
 	return tokenPath
