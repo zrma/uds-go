@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -53,7 +55,10 @@ const (
 
 // Init works internally but public(export) for using in apt_test package
 func (api *Service) Init() error {
-	b, err := api.ReadFile(credentialFile)
+	_, caller, _, _ := runtime.Caller(2)
+	basePath := filepath.Dir(caller)
+
+	b, err := api.ReadFile(filepath.Join(basePath, credentialFile))
 	if err != nil {
 		return err
 	}
@@ -64,7 +69,7 @@ func (api *Service) Init() error {
 		return err
 	}
 
-	token, err := api.GetToken(config, tokenFile, Func{
+	token, err := api.GetToken(config, filepath.Join(basePath, tokenFile), Func{
 		TokenFromFile: TokenFromFile,
 		TokenFromWeb:  TokenFromWeb,
 		OpenBrowser:   browser.Open,
